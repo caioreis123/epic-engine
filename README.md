@@ -8,6 +8,8 @@ Epic Engine coordinates autonomous AI coding agents across the entire software d
 2. **`skills/agent/` (The Multi-Agent Runtime):** Harness-agnostic runtime powered by the **Herdr** terminal multiplexer, enabling asynchronous event-driven collaboration across Claude Code, OpenCode, Codex, Antigravity, and Reasonix.
 3. **`skills/implement/` (Specializations & Meta-Learning):** Domain implementation playbooks (Pillow pixel verification, analytics contracts, repository invariants) and self-evolving skill improvements.
 
+![Epic Engine End-to-End Walkthrough (Mock Jira Card EPIC-300)](assets/epic-engine-demo.gif)
+
 ---
 
 ## Architecture at a Glance
