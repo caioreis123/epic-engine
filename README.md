@@ -158,9 +158,13 @@ python3 skills/epic/epic-status/epic-status.py examples/sample-epic-annual-upgra
 skills/agent/agent-executor/agent-executor.sh web-app annual-upgrade exe-101-upgrade-modal /path/to/brief.md --task task-1
 ```
 
-### 4. Verify Repository Structure & Contracts
+### 4. Run the End-to-End Verification Suite (Local or Docker)
 ```bash
+# Run locally in an isolated temporary directory
 ./scripts/verify-repo.sh
+
+# Or run inside a clean Docker container (Python 3.12 + Git + jq + mock Herdr)
+docker build -t epic-engine . && docker run --rm epic-engine
 ```
 
 ---

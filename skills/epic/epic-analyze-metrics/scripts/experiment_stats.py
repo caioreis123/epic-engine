@@ -218,6 +218,9 @@ def analyze(payload):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print(__doc__.strip())
+        return
     raw = open(sys.argv[1]).read() if len(sys.argv) > 1 else sys.stdin.read()
     print(json.dumps(analyze(json.loads(raw)), indent=2, ensure_ascii=False))
 

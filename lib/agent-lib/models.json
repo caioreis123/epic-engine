@@ -96,6 +96,13 @@
     "gemini-3.6-flash@high": { "harness": "opencode", "ii": 34, "cost_task": 0.93,  "cost_efficiency": 0.0274,   "ttft": 19,   "measured_at": "2026-09-15" },
     "gemini-3.1-pro@high":   { "harness": "opencode", "ii": 30, "cost_task": 0.67,  "cost_efficiency": 0.0223,   "ttft": 26.4, "measured_at": "2026-09-15" },
     "deepseek-v4-pro@max":   { "harness": "deepseek", "ii": 36, "cost_task": 0.67,  "cost_efficiency": 0.0186,   "ttft": 1.7,  "measured_at": "2026-09-15" },
-    "deepseek-flash@max":    { "harness": "deepseek", "ii": 35, "cost_task": 0.22,  "cost_efficiency": 0.00629,  "ttft": 1.5,  "measured_at": "2026-09-15" }
+    "deepseek-flash@max":    { "harness": "deepseek", "ii": 35, "cost_task": 0.22,  "cost_efficiency": 0.00629,  "ttft": 1.5,  "measured_at": "2026-09-15" },
+    "deepseek-flash@off":    { "harness": "deepseek", "ii": 28, "cost_task": 0.05,  "cost_efficiency": 0.00179,  "ttft": 0.8,  "measured_at": "2026-09-15" },
+    "opus@high":             { "harness": "claude",   "ii": 48, "cost_task": 3.61,  "cost_efficiency": 0.0752,   "ttft": 8.6,  "measured_at": "2026-09-15" },
+    "sonnet@high":           { "harness": "claude",   "ii": 32, "cost_task": 1.79,  "cost_efficiency": 0.0559,   "ttft": 2.3,  "measured_at": "2026-09-15" },
+    "haiku@low":             { "harness": "claude",   "ii": 24, "cost_task": 0.25,  "cost_efficiency": 0.0104,   "ttft": 0.9,  "measured_at": "2026-09-15" },
+    "fable@high":            { "harness": "claude",   "ii": 51, "cost_task": 3.91,  "cost_efficiency": 0.0767,   "ttft": 11,   "measured_at": "2026-09-15" },
+    "gpt-5.6-sol@high":      { "harness": "codex",    "ii": 40, "cost_task": 0.42,  "cost_efficiency": 0.0105,   "ttft": 12.0, "measured_at": "2026-09-15" },
+    "gemini-3.5-flash-lite@low": { "harness": "agy",  "ii": 26, "cost_task": 0.12,  "cost_efficiency": 0.0046,   "ttft": 0.7,  "measured_at": "2026-09-15" }
   }
 }

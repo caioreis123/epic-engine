@@ -28,7 +28,7 @@ AGENT_PROMPT = os.environ.get(
     "AGENT_PROMPT_BIN", os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent-prompt.sh")
 )
 PROMPT_TIMEOUT_SECONDS = 660
-AGENT_LIB_DIR = os.environ.get("AGENT_LIB_DIR", os.path.expanduser("~/.epic-engine/lib/agent-lib"))
+AGENT_LIB_DIR = os.environ.get("AGENT_LIB_DIR", os.path.dirname(os.path.abspath(__file__)))
 DARK_PATTERNS = [
     r"usage limit",
     r"rate limit",

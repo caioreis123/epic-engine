@@ -257,7 +257,12 @@ def render(epic_dir, live=False):
 
     rows = _tracking_rows(plans)
     slug = epic_dir.name
-    next_step, reason = _tail_step(epic_dir, slug, rows)
+    if open_items:
+        next_step, reason = None, "open findings require resolution before planning"
+    elif not specs or not plans:
+        next_step, reason = f"/epic-plan {slug}", "dossier ready; needs spec and implementation plan"
+    else:
+        next_step, reason = _tail_step(epic_dir, slug, rows)
 
     lines.append("")
     lines.append("NEXT")

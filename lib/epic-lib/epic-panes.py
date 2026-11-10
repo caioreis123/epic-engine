@@ -13,7 +13,7 @@ import re
 import subprocess
 import sys
 
-HERDR_BIN = "herdr"
+HERDR_BIN = os.environ.get("HERDR_BIN", "herdr")
 ATTENTION_ORDER = ["blocked", "done", "idle", "working", "unknown"]
 NO_EPIC = "(no epic)"
 CTX_LIMIT = int(os.environ.get("EPIC_CTX_LIMIT", "60"))

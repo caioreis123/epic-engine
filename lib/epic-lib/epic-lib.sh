@@ -60,6 +60,10 @@ epic_find_by_card() {
 epic_find() {
   local hint="$1" root matches count epic_dir
   [[ -n "$hint" ]] || return 2
+  if [[ -d "$hint" ]] && epic_has_marker "$hint"; then
+    (cd "$hint" && pwd -P)
+    return 0
+  fi
   root="$(epic_root)"
   [[ -d "$root" ]] || return 5
 
