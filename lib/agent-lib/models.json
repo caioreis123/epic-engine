@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "updated_at": "2026-10-07",
+  "metric": "cost_efficiency = USD per point of Intelligence Index (Artificial Analysis v4.3). Lower is better.",
+  "defaults": {
+    "role": "worker",
+    "context_alert_pct": 60,
+    "budgets_minutes": {
+      "manager": 45,
+      "lead": 30,
+      "worker": 20,
+      "reviewer": 20,
+      "investigator": 15,
+      "reader": 10
+    },
+    "budgets_tokens": {
+      "worker": 20000000,
+      "reviewer": 20000000,
+      "investigator": 20000000,
+      "reader": 5000000
+    }
+  },
+  "routes": {
+    "muse": {
+      "worker":       { "harness": "agy", "model": "gemini-3.8-flash", "effort": "high" },
+      "investigator": { "harness": "agy", "model": "gemini-3.8-flash", "effort": "high" },
+      "reviewer":     { "harness": "agy", "model": "gemini-3.8-flash", "effort": "high" },
+      "reader":       { "harness": "agy", "model": "gemini-3.5-flash-lite", "effort": "low" }
+    }
+  },
+  "harnesses": {
+    "claude": "anthropic",
+    "codex": "openai",
+    "opencode": "google",
+    "agy": "google",
+    "reasonix": "deepseek",
+    "deepseek": "deepseek",
+    "pi": "parent"
+  },
+  "assignments": {
+    "anthropic": {
+      "manager":      [{ "model": "opus",   "effort": "high" }],
+      "architect":    [{ "model": "opus",   "effort": "high" },
+                       { "model": "fable",  "effort": "high" }],
+      "lead":         [{ "model": "opus",   "effort": "high" }],
+      "worker":       [{ "model": "sonnet", "effort": "high" },
+                       { "model": "opus",   "effort": "high" }],
+      "reviewer":     [{ "model": "opus",   "effort": "high" }],
+      "investigator": [{ "model": "opus",   "effort": "high" }],
+      "reader":       [{ "model": "haiku",  "effort": "low"  }]
+    },
+    "openai": {
+      "manager":      [{ "model": "gpt-5.6-luna", "effort": "max"   }],
+      "architect":    [{ "model": "gpt-5.6-luna", "effort": "max"   },
+                       { "model": "gpt-5.6-sol",  "effort": "high"  }],
+      "lead":         [{ "model": "gpt-5.6-luna", "effort": "high"  }],
+      "worker":       [{ "model": "gpt-5.6-luna", "effort": "high"  },
+                       { "model": "gpt-5.6-luna", "effort": "xhigh" }],
+      "reviewer":     [{ "model": "gpt-5.6-luna", "effort": "high"  }],
+      "investigator": [{ "model": "gpt-5.6-luna", "effort": "high"  }],
+      "reader":       [{ "model": "gpt-5.6-luna", "effort": "high"  }]
+    },
+    "google": {
+      "manager":      [{ "model": "gemini-3.8-flash", "effort": "high" }],
+      "architect":    [{ "model": "gemini-3.8-flash", "effort": "high" }],
+      "lead":         [{ "model": "gemini-3.7-flash", "effort": "high" }],
+      "worker":       [{ "model": "gemini-3.7-flash", "effort": "high" },
+                       { "model": "gemini-3.8-flash", "effort": "high" }],
+      "reviewer":     [{ "model": "gemini-3.8-flash", "effort": "high" }],
+      "investigator": [{ "model": "gemini-3.7-flash", "effort": "high" }],
+      "reader":       [{ "model": "gemini-3.5-flash-lite", "effort": "low" }]
+    },
+    "deepseek": {
+      "manager":      [{ "model": "deepseek-v4-pro", "effort": "max" }],
+      "architect":    [{ "model": "deepseek-v4-pro", "effort": "max" }],
+      "lead":         [{ "model": "deepseek-flash",  "effort": "max" }],
+      "worker":       [{ "model": "deepseek-flash",  "effort": "max" }],
+      "reviewer":     [{ "model": "deepseek-v4-pro", "effort": "max" }],
+      "investigator": [{ "model": "deepseek-flash",  "effort": "max" }],
+      "reader":       [{ "model": "deepseek-flash",  "effort": "off" }]
+    }
+  },
+  "catalog": {
+    "gpt-5.6-luna@high":     { "harness": "codex",    "ii": 32, "cost_task": 0.04,  "cost_efficiency": 0.00125,  "ttft": 8.6,  "measured_at": "2026-09-15" },
+    "gpt-5.6-luna@xhigh":    { "harness": "codex",    "ii": 35, "cost_task": 0.09,  "cost_efficiency": 0.00257,  "ttft": 45,   "measured_at": "2026-09-15" },
+    "gpt-5.6-luna@max":      { "harness": "codex",    "ii": 38, "cost_task": 0.18,  "cost_efficiency": 0.00474,  "ttft": 124,  "measured_at": "2026-09-15" },
+    "gpt-5.6-terra@medium":  { "harness": "codex",    "ii": 30, "cost_task": 0.18,  "cost_efficiency": 0.006,    "ttft": 1.7,  "measured_at": "2026-09-15" },
+    "gpt-5.6-terra@xhigh":   { "harness": "codex",    "ii": 38, "cost_task": 0.63,  "cost_efficiency": 0.01658,  "ttft": 14.5, "measured_at": "2026-09-15" },
+    "claude-sonnet-5@high":  { "harness": "claude",   "ii": 32, "cost_task": 1.79,  "cost_efficiency": 0.0559,   "ttft": 2.3,  "measured_at": "2026-09-15" },
+    "claude-sonnet-5@max":   { "harness": "claude",   "ii": 38, "cost_task": 5.09,  "cost_efficiency": 0.1339,   "ttft": 196,  "measured_at": "2026-09-15" },
+    "claude-opus-5@high":    { "harness": "claude",   "ii": 48, "cost_task": 3.61,  "cost_efficiency": 0.0752,   "ttft": 8.6,  "measured_at": "2026-09-15" },
+    "claude-fable-5-1@high": { "harness": "claude",   "ii": 51, "cost_task": 3.91,  "cost_efficiency": 0.0767,   "ttft": 11,   "measured_at": "2026-09-15" },
+    "claude-fable-5-1@max":  { "harness": "claude",   "ii": 53, "cost_task": 7.63,  "cost_efficiency": 0.1439,   "ttft": 235,  "measured_at": "2026-09-15" },
+    "gemini-3.8-flash@high": { "harness": "opencode", "ii": 41, "cost_task": 1.24,  "cost_efficiency": 0.0302,   "ttft": 16.3, "measured_at": "2026-09-15" },
+    "gemini-3.7-flash@high": { "harness": "opencode", "ii": 39, "cost_task": 0.93,  "cost_efficiency": 0.0238,   "ttft": 10.2, "measured_at": "2026-09-15" },
+    "gemini-3.6-flash@high": { "harness": "opencode", "ii": 34, "cost_task": 0.93,  "cost_efficiency": 0.0274,   "ttft": 19,   "measured_at": "2026-09-15" },
+    "gemini-3.1-pro@high":   { "harness": "opencode", "ii": 30, "cost_task": 0.67,  "cost_efficiency": 0.0223,   "ttft": 26.4, "measured_at": "2026-09-15" },
+    "deepseek-v4-pro@max":   { "harness": "deepseek", "ii": 36, "cost_task": 0.67,  "cost_efficiency": 0.0186,   "ttft": 1.7,  "measured_at": "2026-09-15" },
+    "deepseek-flash@max":    { "harness": "deepseek", "ii": 35, "cost_task": 0.22,  "cost_efficiency": 0.00629,  "ttft": 1.5,  "measured_at": "2026-09-15" }
+  }
+}
