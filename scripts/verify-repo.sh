@@ -268,5 +268,233 @@ echo "$stats_out" | grep -q '"winner": "variant_a"' || fail "experiment_stats.py
 echo "$stats_out" | grep -q '"decision_ready": true' || fail "experiment_stats.py decision_ready should be true"
 pass "experiment_stats.py (--help, z-test, SRM chi-square, Bayesian probability) verified"
 
+echo "=== 5. End-to-End Mock Jira Card (EPIC-300) Lifecycle on epic-engine ==="
+
+# Clone epic-engine itself into a temporary remote + working repo
+mkdir -p "$TMP_WS/remotes/epic-engine.git"
+git -C "$TMP_WS/remotes/epic-engine.git" init -q --bare -b main
+git clone -q "$REPO_ROOT" "$TMP_WS/repos/epic-engine"
+cp -R "$REPO_ROOT/skills" "$REPO_ROOT/lib" "$TMP_WS/repos/epic-engine/"
+git -C "$TMP_WS/repos/epic-engine" config user.email "worker@example.com"
+git -C "$TMP_WS/repos/epic-engine" config user.name "Worker Agent"
+git -C "$TMP_WS/repos/epic-engine" add -A
+git -C "$TMP_WS/repos/epic-engine" commit -q -m "sync working tree" || true
+git -C "$TMP_WS/repos/epic-engine" remote set-url origin "$TMP_WS/remotes/epic-engine.git"
+git -C "$TMP_WS/repos/epic-engine" push -q -u origin main
+
+# Create Mock Jira Card payload (EPIC-300)
+MOCK_JIRA="$TMP_WS/jira-EPIC-300.json"
+cat > "$MOCK_JIRA" <<'EOF'
+{
+  "key": "EPIC-300",
+  "fields": {
+    "summary": "Add --json output mode to epic-status.py",
+    "description": "Allow orchestrators and CI pipelines to query epic-status.py with --json and receive structured JSON containing epic, next, and reason.",
+    "status": { "name": "In Progress" },
+    "issuetype": { "name": "Story" }
+  }
+}
+EOF
+
+EPIC_300_DIR="$TMP_WS/epics/epic-300-status-json"
+mkdir -p "$EPIC_300_DIR"
+
+# Stage 1: Empty directory -> NEXT: /epic-start
+step1="$(python3 "$REPO_ROOT/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step1" | grep -q "/epic-start epic-300-status-json" || fail "Stage 1 expected /epic-start, got: $step1"
+
+# Materialize 00-BRIEFING.md from Mock Jira Card + open finding
+jira_key="$(jq -r '.key' "$MOCK_JIRA")"
+jira_summary="$(jq -r '.fields.summary' "$MOCK_JIRA")"
+jira_desc="$(jq -r '.fields.description' "$MOCK_JIRA")"
+mkdir -p "$EPIC_300_DIR/findings" "$EPIC_300_DIR/decisions" "$EPIC_300_DIR/specs" "$EPIC_300_DIR/plans" "$EPIC_300_DIR/reviews/round-1" "$EPIC_300_DIR/validations"
+cat > "$EPIC_300_DIR/00-BRIEFING.md" <<EOF
+---
+card: $jira_key
+title: "$jira_summary"
+created_at: 2026-10-05-0900
+---
+
+# $jira_key — $jira_summary
+
+$jira_desc
+EOF
+
+cat > "$EPIC_300_DIR/findings/2026-10-05-cli-flags.md" <<'EOF'
+---
+question: "How does epic-status.py currently parse CLI flags?"
+short_answer: ""
+---
+Pending investigation.
+EOF
+
+# Stage 2: Open finding blocks planning -> waiting
+step2="$(python3 "$REPO_ROOT/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step2" | grep -q "open findings require resolution before planning" || fail "Stage 2 expected open finding gate, got: $step2"
+
+# Dispatch agent-reader.sh against the cloned epic-engine repo to resolve finding
+HERDR_PANE_ID="w1:p1" AGENT_READER_RUNDIR_BASE="$TMP_WS/readers" \
+  bash "$REPO_ROOT/skills/agent/agent-reader/agent-reader.sh" \
+  --scope "$TMP_WS/repos/epic-engine/skills/epic/epic-status" \
+  "How does epic-status.py parse CLI flags?" >/dev/null
+
+cat > "$EPIC_300_DIR/findings/2026-10-05-cli-flags.md" <<'EOF'
+---
+question: "How does epic-status.py currently parse CLI flags?"
+short_answer: "Checks sys.argv for flags like --live in main()."
+conclusions:
+  - "confirmed | 2026-10-05T09:10:00Z | (original)"
+---
+Verified in skills/epic/epic-status/epic-status.py:272.
+EOF
+
+# Stage 3: Finding settled, no spec/plan -> NEXT: /epic-plan
+step3="$(python3 "$REPO_ROOT/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step3" | grep -q "/epic-plan epic-300-status-json" || fail "Stage 3 expected /epic-plan, got: $step3"
+
+# Write spec and plan with 2 tasks targeting epic-engine
+cat > "$EPIC_300_DIR/specs/2026-10-05-status-json-spec.md" <<'EOF'
+# Spec: Add --json Flag to epic-status.py
+When `--json` is passed to `epic-status.py`, emit `{"epic": ..., "next": ..., "reason": ...}`.
+EOF
+
+cat > "$EPIC_300_DIR/plans/2026-10-05-status-json-plan.md" <<'EOF'
+# Plan: Add --json Flag to epic-status.py
+
+## Tracking
+
+| # | Task | Stage | Repo | Card | Evidence |
+|---|---|---|---|---|---|
+| 1 | Add --json flag serialization to epic-status.py | implement | epic-engine | EPIC-301 | |
+| 2 | Add --json smoke test to epic-status suite | implement | epic-engine | EPIC-302 | |
+EOF
+
+# Stage 4: Spec & plan ready, tasks pending -> NEXT: /epic-implement
+step4="$(python3 "$REPO_ROOT/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step4" | grep -q "/epic-implement epic-300-status-json" || fail "Stage 4 expected /epic-implement, got: $step4"
+
+# Dispatch agent-executor.sh on the cloned epic-engine repo
+exec_brief="$TMP_WS/brief-epic-300.md"
+cat > "$exec_brief" <<'EOF'
+Implement --json flag in skills/epic/epic-status/epic-status.py and commit on branch epic/epic-300-status-json.
+EOF
+
+exec_300_out="$(AGENT_EXECUTOR_REPO_ROOTS="$TMP_WS/repos" AGENT_STATE_DIR="$TMP_WS/state" \
+  bash "$REPO_ROOT/skills/agent/agent-executor/agent-executor.sh" \
+  epic-engine epic-300-status-json exe-301-json "$exec_brief" --task task-1)"
+echo "$exec_300_out" | grep -q "branch=epic/epic-300-status-json" || fail "agent-executor.sh failed on epic-engine repo: $exec_300_out"
+
+WT_EPIC_ENGINE="$TMP_WS/repos/epic-engine-epic-epic-300-status-json"
+[[ -d "$WT_EPIC_ENGINE" ]] || fail "Worktree $WT_EPIC_ENGINE was not created"
+
+# Worker applies real code modification in the epic-engine worktree & commits
+python3 - "$WT_EPIC_ENGINE/skills/epic/epic-status/epic-status.py" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1])
+src = p.read_text(encoding="utf-8")
+old = '    print(render(epic_dir, live="--live" in sys.argv))\n    return 0'
+new = '''    if "--json" in sys.argv:
+        import json
+        plans = [x for x in sorted((epic_dir / "plans").glob("*.md")) if not x.stem.endswith(("-summary", "-split"))] if (epic_dir / "plans").is_dir() else []
+        specs = sorted((epic_dir / "specs").glob("*.md")) if (epic_dir / "specs").is_dir() else []
+        findings = sorted((epic_dir / "findings").glob("*.md")) if (epic_dir / "findings").is_dir() else []
+        open_items = [l for l in (_finding_line(f) for f in findings) if not l.startswith(SETTLED_MARK)]
+        rows = _tracking_rows(plans)
+        nxt, rsn = _next_step(epic_dir, open_items, specs, plans, rows)
+        print(json.dumps({"epic": epic_dir.name, "next": nxt, "reason": rsn}))
+        return 0
+    print(render(epic_dir, live="--live" in sys.argv))
+    return 0'''
+assert old in src, "target block not found in epic-status.py"
+p.write_text(src.replace(old, new, 1), encoding="utf-8")
+PY
+
+git -C "$WT_EPIC_ENGINE" add skills/epic/epic-status/epic-status.py
+git -C "$WT_EPIC_ENGINE" commit -q -m "EPIC-301 task-1: add --json flag to epic-status.py"
+git -C "$WT_EPIC_ENGINE" push -q -u origin epic/epic-300-status-json
+HEAD_SHA="$(git -C "$WT_EPIC_ENGINE" rev-parse HEAD)"
+
+# Worker writes completion callbacks to inbox.jsonl and drains via agent-watchdog.py
+cat > "$EPIC_300_DIR/inbox.jsonl" <<EOF
+{"ts":"2026-10-05T10:00:00Z","type":"done","task":"task-1","commit":"$HEAD_SHA","worker":"w1:p9"}
+{"ts":"2026-10-05T10:05:00Z","type":"done","task":"task-2","commit":"$HEAD_SHA","worker":"w1:p9"}
+EOF
+drain_300="$(python3 "$REPO_ROOT/lib/agent-lib/agent-watchdog.py" drain "$EPIC_300_DIR/inbox.jsonl" --lead w1:p1 --json)"
+echo "$drain_300" | grep -q '"action": "DRAIN"' || fail "Failed to drain EPIC-300 inbox: $drain_300"
+
+# Stage 5: All tasks delivered in inbox.jsonl -> NEXT: /epic-review
+step5="$(python3 "$REPO_ROOT/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step5" | grep -q "/epic-review epic-300-status-json" || fail "Stage 5 expected /epic-review, got: $step5"
+
+# Dispatch agent-reviewer.sh and record completed BATCH-REPORT.md
+HERDR_PANE_ID="w1:p1" AGENT_REVIEW_RUNDIR_BASE="$TMP_WS/reviews" \
+  bash "$REPO_ROOT/skills/agent/agent-reviewer/agent-reviewer.sh" \
+  "https://github.com/acme-corp/epic-engine/pull/300" >/dev/null
+
+cat > "$EPIC_300_DIR/reviews/round-1/BATCH-REPORT.md" <<EOF
+---
+status: completed
+heads:
+  - "epic-engine | $HEAD_SHA"
+---
+# Batch Review Report
+No blocking findings on commit $HEAD_SHA.
+EOF
+
+# Stage 6: Review completed, 2 tasks -> NEXT: /epic-split
+step6="$(python3 "$REPO_ROOT/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step6" | grep -q "/epic-split epic-300-status-json" || fail "Stage 6 expected /epic-split, got: $step6"
+
+cat > "$EPIC_300_DIR/plans/2026-10-05-1100-split.md" <<EOF
+---
+status: completed
+heads:
+  - "epic-engine | $HEAD_SHA"
+---
+# Split Plan
+Single atomic PR #300 verified under all 4 size gates.
+EOF
+
+# Stage 7: Split completed -> NEXT: /epic-validate-pre-merge
+step7="$(python3 "$REPO_ROOT/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step7" | grep -q "/epic-validate-pre-merge epic-300-status-json" || fail "Stage 7 expected /epic-validate-pre-merge, got: $step7"
+
+# Pre-merge validation: run the modified epic-status.py --json in the worktree!
+json_check="$(python3 "$WT_EPIC_ENGINE/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR" --json)"
+echo "$json_check" | grep -q '"next": "/epic-validate-pre-merge epic-300-status-json"' || fail "Worktree --json feature failed: $json_check"
+
+cat > "$EPIC_300_DIR/validations/2026-10-05-pre-merge.md" <<'EOF'
+---
+epic: epic-300-status-json
+status: completed
+verdict: GO
+---
+# Pre-Merge Validation
+Verified `epic-status.py --json` output in worktree.
+EOF
+
+# Stage 8: Pre-merge validation passed -> NEXT: /epic-merge
+step8="$(python3 "$REPO_ROOT/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step8" | grep -q "/epic-merge epic-300-status-json" || fail "Stage 8 expected /epic-merge, got: $step8"
+
+# Merge worktree branch into epic-engine main and record merge finding
+git -C "$TMP_WS/repos/epic-engine" merge -q --no-ff epic/epic-300-status-json -m "Merge PR #300: EPIC-300 --json flag"
+cat > "$EPIC_300_DIR/findings/2026-10-05-merge.md" <<'EOF'
+---
+question: "Were all EPIC-300 PRs merged to main?"
+short_answer: "Merged PR #300 to main."
+stage: merge
+status: completed
+conclusions:
+  - "confirmed | 2026-10-05T11:30:00Z | (original)"
+---
+Merged to main.
+EOF
+
+# Stage 9: Merged -> NEXT: /epic-release-delivery
+step9="$(python3 "$TMP_WS/repos/epic-engine/skills/epic/epic-status/epic-status.py" "$EPIC_300_DIR")"
+echo "$step9" | grep -q "/epic-release-delivery epic-300-status-json" || fail "Stage 9 expected /epic-release-delivery, got: $step9"
+pass "Mock Jira Card EPIC-300 walked all 9 epic-next stages and modified epic-engine via agent-executor/reader/reviewer"
+
 echo ""
 echo "✅ ALL EPIC ENGINE VERIFICATION CHECKS PASSED."

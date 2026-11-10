@@ -136,11 +136,54 @@ def _tracking_rows(plans):
                         "stage": data.get("stage", "implement"),
                         "repo": data.get("repo", ""),
                         "jira": m_card.group(1) if m_card else "",
+                        "evidence": data.get("evidence", "").strip("`— "),
                         "id": f"task-{data.get('#', '')}",
                     })
             elif in_table and not line.startswith("|"):
                 break
     return rows
+
+
+def _inbox_done_tasks(epic_dir):
+    inbox = epic_dir / "inbox.jsonl"
+    if not inbox.is_file():
+        return set()
+    import json
+    done = set()
+    for line in inbox.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if (rec.get("status") == "done" or rec.get("type") == "done") and rec.get("task"):
+            done.add(rec["task"])
+    return done
+
+
+def _pending_tasks(epic_dir, rows):
+    done_in_inbox = _inbox_done_tasks(epic_dir)
+    pending = []
+    for row in rows:
+        stage = (row.get("stage") or "").strip().lower()
+        if stage in ("done", "completed", "concluido"):
+            continue
+        if row.get("evidence"):
+            continue
+        if row["id"] in done_in_inbox:
+            continue
+        pending.append(row["id"])
+    return pending
+
+
+def _has_completed_artifact(paths):
+    for path in paths:
+        fields = frontmatter.read(path)
+        if (fields.get("status") or "").strip().lower() in ("completed", "concluido", "done"):
+            return True
+    return False
 
 
 def _validation_statuses(epic_dir):
@@ -212,8 +255,32 @@ def _tail_step(epic_dir, slug, rows=()):
         post_exp = _post_experiment_step(epic_dir, slug)
         if post_exp:
             return post_exp
-    return ("/epic-release-experiment %s" % slug,
-            "all validation gates passed; ready to announce experiment")
+        return ("/epic-release-experiment %s" % slug,
+                "all validation gates passed; ready to announce experiment")
+    return ("/epic-release-delivery %s" % slug,
+            "all validation gates passed; ready to announce delivery")
+
+
+def _next_step(epic_dir, open_items, specs, plans, rows):
+    slug = epic_dir.name
+    if not (epic_dir / "00-BRIEFING.md").is_file():
+        return (f"/epic-start {slug}", "dossier missing 00-BRIEFING.md")
+    if open_items:
+        return (None, "open findings require resolution before planning")
+    if not specs or not plans or not rows:
+        return (f"/epic-plan {slug}", "dossier ready; needs spec and implementation plan")
+    if _prs_merged(epic_dir):
+        return _tail_step(epic_dir, slug, rows)
+    pending = _pending_tasks(epic_dir, rows)
+    if pending:
+        return (f"/epic-implement {slug}", f"tasks pending delivery: {', '.join(pending)}")
+    reports = sorted((epic_dir / "reviews").glob("**/*.md")) if (epic_dir / "reviews").is_dir() else []
+    if not _has_completed_artifact(reports):
+        return (f"/epic-review {slug}", "all tasks delivered; batch code review pending")
+    splits = sorted((epic_dir / "plans").glob("*-split.md")) if (epic_dir / "plans").is_dir() else []
+    if len(rows) > 1 and not _has_completed_artifact(splits):
+        return (f"/epic-split {slug}", "batch review completed; PR split plan pending")
+    return _tail_step(epic_dir, slug, rows)
 
 
 def render(epic_dir, live=False):
@@ -256,13 +323,7 @@ def render(epic_dir, live=False):
         lines.append("  " + _decision_line(path))
 
     rows = _tracking_rows(plans)
-    slug = epic_dir.name
-    if open_items:
-        next_step, reason = None, "open findings require resolution before planning"
-    elif not specs or not plans:
-        next_step, reason = f"/epic-plan {slug}", "dossier ready; needs spec and implementation plan"
-    else:
-        next_step, reason = _tail_step(epic_dir, slug, rows)
+    next_step, reason = _next_step(epic_dir, open_items, specs, plans, rows)
 
     lines.append("")
     lines.append("NEXT")

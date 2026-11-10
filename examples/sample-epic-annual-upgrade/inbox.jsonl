@@ -1,3 +1,5 @@
 {"ts":"2026-10-01T14:10:00Z","type":"done","task":"task-1","pr":"https://github.com/acme/graphql-bff/pull/101","worker":"w12:p2"}
 {"ts":"2026-10-01T16:30:00Z","type":"blocked","task":"task-2","ask":"Missing Figma token for savings badge border radius","worker":"w12:p3"}
 {"ts":"2026-10-01T18:05:00Z","type":"done","task":"task-2","pr":"https://github.com/acme/web-app/pull/201","worker":"w12:p3"}
+{"ts":"2026-10-01T18:40:00Z","type":"done","task":"task-3","pr":"https://github.com/acme/web-app/pull/202","worker":"w12:p3"}
+{"ts":"2026-10-01T19:15:00Z","type":"done","task":"task-4","pr":"https://github.com/acme/visual-check/pull/51","worker":"w12:p4"}
